@@ -1,0 +1,23 @@
+indir = ‘path’
+filename = ‘file name’
+import os 
+file_path = os.path.join(indir, filename)
+file_path  should print path 
+with open(file_path, ‘r’) as fi:
+	data = fi.readlines()
+for r in data:
+	print r
+#To Read In:
+
+words = [ ]
+with open(file_path, ‘r’) as f:
+	for line in f:
+		words.append(line.strip())   make the lines read without the / 
+#To loop:
+for word in words:
+	print word
+#To run script (like sentiment) against the list:
+for word in words:
+	print(str(sentiment(word)))
+#For scripts:
+

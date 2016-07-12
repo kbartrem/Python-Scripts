@@ -1,0 +1,35 @@
+#Word counts in .txt files:
+filename = ‘filename’
+import json
+fullpath = os.path.join(indir, filename)
+#to read in by line  
+with open (fullpath, ‘r’) as f:
+	document = f.read()
+document
+#to clean document 
+document = [ ] (make document an empty list)
+with open(fullpath, ‘r’) as f:
+	for line in f:
+		document.append(line.strip())
+document = ‘ ‘.join(document)
+#to read whole file 
+with open(fullpath, ‘r’) as f:
+	document2 = f.read()  (document2 is example, insert name of document)
+document2 = document2.replace(‘\n’, ‘’).replace(‘\r’, ‘’)     (cleaning up document)
+#to do word count 
+word_counts = {}        ({} = dictionary)
+tokens = document.split(‘ ‘)
+tokens
+for word in tokens: 
+	if word not in word_counts:
+		word_counts[word] = 0
+	word_counts[word]+=1
+for word, count in word_counts.iteritems():
+	print ‘%s\t%d’ % (word, count)
+#to export:
+outfile = ‘test_file.csv’  (any file name)
+outdir = indir
+full_outpath = os.path.join(outdir, outfile)
+with open(full_outpath, ‘w’) as f:
+	for word, count in word_counts.iteritems():
+		f.write(‘%s\t%d\n’ % (word, count))

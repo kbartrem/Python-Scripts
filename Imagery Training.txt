@@ -1,0 +1,9 @@
+#Training:
+
+cd /Users/kyle/Desktop/Imagery/TrainingAndTesting/
+./run_trainClassifier.sh /Applications/MATLAB/MATLAB_Runtime/v901 '/Users/kyle/Desktop/Imagery/Faces' '/Users/kyle/Desktop/Imagery/Non Faces' 'kface1' 
+
+#Testing:
+
+cd /Users/kyle/Desktop/Imagery/TrainingAndTesting/
+./run_testClassifier.sh /Applications/MATLAB/MATLAB_Runtime/v901 '/Users/kyle/Desktop/Imagery/Non Claims' 'kface1'
