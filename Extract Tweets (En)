@@ -1,0 +1,95 @@
+import redis
+from elasticsearch import Elasticsearch
+import pdfkit
+from bs4 import BeautifulSoup
+import requests
+import time
+import datetime
+#import matplotlib.pyplot as plt
+import pandas as pd
+from elasticsearch_dsl import Search, Q
+import hashlib
+import yaml
+import boto
+import zipfile
+import folium
+import csv
+
+#%matplotlib inline
+
+config = yaml.load(open('pxp.yaml'))
+
+r = redis.StrictRedis(host=config['redis']['host'], port=6379, db=0,decode_responses=True)
+
+es = Elasticsearch(config['elasticsearch']['host'])
+es_index = config['webpages']['es_index']
+
+access_key = config['aws']['access_key']
+secret_key = config['aws']['secret_key']
+s3 = boto.connect_s3(aws_access_key_id = access_key,
+        aws_secret_access_key = secret_key)
+b = s3.get_bucket(config['aws']['bucket'])
+
+
+from_date = "2016-03-02"
+to_date = "2016-05-02"
+
+q= '"Real Madrid" OR "ريال مدريد"'
+#q="IslamicState OR Islamic_State OR wilaya OR ISIL Or Dawlah OR al-khilafah*"
+#q="(NOT 'wIlayat') AND 'daesh' AND content_language: English AND (NOT retweeted_status.id_str:*)"
+
+#q= "(yetimyetim01 OR WildCharm2 OR walid26741680 OR wail75f OR vohexumeza OR umm_abisali78 OR UANigeri OR atripleshock8 OR SyariahIsLigth6 OR StormBringer15 OR spaghettiny OR SinglePath15 OR serviteurd1 OR SBLunat OR SalmanWitness OR rizalino_5_5 OR PocongSkate OR peteza_juan OR pc12cadangan OR Op72IS OR OmerAwari03 OR Niazi_ahrash OR mufid_yusron OR MountezoManz_43 OR mobi_ayubi OR mioa231 OR mezzovenditti OR Mamamoo_J OR maira_zafeera OR lolbrave15 OR LandRibat OR kitty_muezza OR kirishina_maiko OR killercat400 OR KapudanPantau OR JoinISNation87 OR jhcjdhfjcbcmbkf OR jadikafir3 OR ISVictorious08 OR ISVictorious07 OR Integrity2992 OR ibrahimabkd988 OR ibrahim008888 OR HERMANRFP OR hatebeingslave OR halalfishnchips OR GreatISNation89 OR ghuraba18 OR FrotanAdam OR ElaNisaNur1 OR DunyahMusafirah OR duhaima12 OR drerdogan_01 OR dieinyourrage5 OR danjenkoe OR DaDamm07 OR brsiraj OR baqiya76 OR at_rifat OR AryaStark_ST OR arungenre OR Archivepress4 OR Aq8Baaq OR Aq8Ba OR Ansar_AlSharia0 OR aminion_iam OR aloromi1 OR AlJabarti45 OR alhindi_hhh OR al_munaseer01 OR AkhiJibran OR AishaMsellem OR ahmedshamil OR ahlulsun OR Ahlu__Sunnah OR AbuUmarAlKurdi OR AbuShootFirst47 OR AbuRaihaan8 OR AbuMusabMSF OR Abujilaal7 OR abuhumayra3 OR AbuFullaan6t OR AbuDharIslandi5 OR Abubay09 OR abuafa2014 OR abu_abdelkarim OR AbouNouhh3 OR Abou_badawlawi OR abisali77_umm OR AbangFau OR AAnnahmuslim83 OR 777piligrim OR 5abalkafr OR 17nirvh OR _ummkhaleed OR _croxetti_ OR op_is90) AND NOT Terror_Monitor"
+#q="content_language: English"
+#q = '(غنائم AND "الدولة الإسلامية") OR (صدقة AND "الدولة الإسلامية") OR (زكا AND "الدولة الإسلامية") OR ("مصفاة بترول" AND "الدولة الإسلامية") OR ("حقل الغاز" AND "الدولة الإسلامية") OR ("سد موصل" AND "الدولة الإسلامية") OR ("توزيع الزكاة" AND "الدولة الإسلامية") OR (جزية AND "الدولة الإسلامية") OR ("مكتب المحاسبة" AND "الدولة الإسلامية") OR ( "مكتب الرقابة والتفتعيش" AND "الدولة الإسلامية") OR (غنائم AND دائش) OR (صدقة AND دائش) OR (زكا AND دائش) OR ("مصفاة بترول" AND دائش) OR ("حقل الغاز" AND دائش) OR ("سد موصل" AND دائش) OR (جزية AND دائش) OR (حساب AND "الدولة الإسلامية") OR (حساب AND دائش) OR (حسابات AND "الدولة الإسلامية") OR (حسابات AND دائش) OR (الضرائب AND "الدولة الإسلامية")'
+#q= 'user.id:1668963294 OR user.id:4056642322 OR user.id:4277605949 OR user.id:3646645938 OR user.id:4878429893 OR user.id:3654354868 OR user.id:3001969568 OR user.id:3396933574 OR user.id:3323918295 OR user.id:4247918140'
+fields = ["id","date_time","user.id","user.screen_name","user.location","user.name","text","full_url","lang"]
+
+s = Search(using=es,
+           index="twitter",
+           doc_type = "tweet"
+#    ).filter(
+#        "range", date_time={"gte": from_date,"format": "yyyy-MM-dd",
+#                           "lt": to_date,"format": "yyyy-MM-dd"}
+#    ).filter(
+#        "term", content_language="English"
+    ).query(
+        'query_string', query=q
+    )
+
+s = s.fields(fields)
+#s.aggs.bucket(
+#        'per_day', 'date_histogram', field='date_time', interval="day", format='yyyy-MM-dd'
+#    ).bucket(
+#        'top_tweets', 'top_hits', _source={"include": fields}, size=25)
+
+response = s.execute()
+
+
+response.hits.total
+
+file_prefix = "veracitydata1"
+
+with open(file_prefix+'_'+from_date+'_to_'+to_date+'.csv', 'w') as csvfile:
+    writer = csv.DictWriter(csvfile, fieldnames=fields)
+    writer.writeheader()
+    for hit in s.scan():
+    #    writer.writerow(hit)
+    #for day in response.aggregations.per_day.buckets:
+    #    for hit in day.top_tweets.hits.hits:
+            #if 'user' in hit._source:
+            #    hit._source["user.id"] = hit._source.user.id
+            #    hit._source["user.screen_name"] = hit._source.user.screen_name
+            #    hit._source["user.location"] = hit._source.user.location
+            #    hit._source["user.description"] = hit._source.user.description
+            #    hit._source["user.name"] = hit._source.user.name
+            #    del hit._source.user
+            row = hit.to_dict()
+            #try:
+            #row['text'] = row['text']
+            writer.writerow(row)
+            #except:
+            #    continue
+            
+    for hit in response:
+    print(hit.to_dict())
+
