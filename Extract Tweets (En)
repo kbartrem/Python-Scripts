@@ -19,7 +19,7 @@ import csv
 
 config = yaml.load(open('pxp.yaml'))
 
-r = redis.StrictRedis(host=config['redis']['host'], port=6379, db=0,decode_responses=True)
+r = redis.StrictRedis(host=config['redis']['host'], #port=, db=0,decode_responses=True)
 
 es = Elasticsearch(config['elasticsearch']['host'])
 es_index = config['webpages']['es_index']
